@@ -31,7 +31,7 @@ jobs:
         working-directory: hyperhle
         run: |
           mkdir -p android/app/src/main/assets
-          cp "$GITHUB_WORKSPACE/Angry Birds Rio 1.0.0.ipa" "android/app/src/main/assets/rf12ios110.ipa"
+          cp "$GITHUB_WORKSPACE/Angry Birds Rio 1.0.0.ipa" "android/app/src/main/assets/fix.ipa"
           python3 - <<'PY'
           from pathlib import Path
 
@@ -54,8 +54,8 @@ jobs:
                       Log.e(TAG, "Couldn't create " + appsDir);
                       return new String[0];
                   }
-                  File ipaFile = new File(appsDir, "rf12ios110.ipa");
-                  try (InputStream in = getAssets().open("rf12ios110.ipa");
+                  File ipaFile = new File(appsDir, "fix.ipa");
+                  try (InputStream in = getAssets().open("fix.ipa");
                        FileOutputStream out = new FileOutputStream(ipaFile, false)) {
                       byte[] buffer = new byte[65536];
                       int read;
@@ -247,7 +247,7 @@ jobs:
       - name: Verify APK contents
         working-directory: hyperhle
         run: |
-          unzip -l dist/Angry-Birds-Rio-Direct-Launch.apk | grep -F "rf12ios110.ipa"
+          unzip -l dist/Angry-Birds-Rio-Direct-Launch.apk | grep -F "fix.ipa"
           unzip -l dist/Angry-Birds-Rio-Direct-Launch.apk | grep -F "lib/arm64-v8a/libtouchHLE.so"
 
       - name: Upload APK artifact
