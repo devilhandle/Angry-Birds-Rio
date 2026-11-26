@@ -83,6 +83,55 @@ jobs:
           gradle.write_text(build)
           PY
 
+      - name: Forward Android launch arguments to the emulator core
+        working-directory: hyperhle
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/lib.rs")
+          source = path.read_text()
+          old = '''pub extern "C" fn SDL_main(
+              _argc: std::ffi::c_int,
+              _argv: *const *const std::ffi::c_char,
+          ) -> std::ffi::c_int {'''
+          new = '''pub extern "C" fn SDL_main(
+              argc: std::ffi::c_int,
+              argv: *const *const std::ffi::c_char,
+          ) -> std::ffi::c_int {'''
+          if old not in source:
+              raise SystemExit("SDL_main signature did not match expected source")
+
+          source = source.replace(old, new, 1)
+          old_body = '''    // Empty args: brings up app picker.
+              match main([String::new()].into_iter()) {'''
+          new_body = '''    // SDLActivity forwards Android getArguments() through argc/argv.
+              // Preserve those arguments so a bundled IPA path starts directly
+              // instead of falling back to the app picker.
+              let args: Vec<String> = if argc > 0 && !argv.is_null() {
+                  unsafe { std::slice::from_raw_parts(argv, argc as usize) }
+                      .iter()
+                      .map(|arg| {
+                          if arg.is_null() {
+                              String::new()
+                          } else {
+                              unsafe { std::ffi::CStr::from_ptr(*arg) }
+                                  .to_string_lossy()
+                                  .into_owned()
+                          }
+                      })
+                      .collect()
+              } else {
+                  vec![String::new()]
+              };
+              match main(args.into_iter()) {'''
+          if old_body not in source:
+              raise SystemExit("SDL_main empty-arguments block did not match expected source")
+          source = source.replace(old_body, new_body, 1)
+          path.write_text(source)
+          print("SDL_main now forwards the Android command-line arguments")
+          PY
+
       - name: Install system build dependencies
         run: |
           sudo apt-get update -qq
