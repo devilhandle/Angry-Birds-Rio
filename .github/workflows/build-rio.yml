@@ -160,12 +160,12 @@ jobs:
           cargo fetch --target aarch64-linux-android
           python3 - <<'PY'
           from pathlib import Path
-          import os
 
-          roots = [Path.home() / ".cargo" / "git" / "checkouts"]
-          candidates = list(roots[0].glob("rust-sdl2-*/*/sdl2-sys/build.rs"))
+          checkout_root = Path.home() / ".cargo" / "git" / "checkouts"
+          candidates = list(checkout_root.glob("rust-sdl2-*/*/sdl2-sys/build.rs"))
           if not candidates:
               raise SystemExit("Fetched rust-sdl2 sdl2-sys build.rs was not found")
+
           patched = 0
           for path in candidates:
               source = path.read_text()
@@ -174,8 +174,8 @@ jobs:
               if start < 0 or end < 0:
                   continue
               block = source[start:end]
-              old_block = '    let deps_path = target_path.join("deps");\\n    for path in &[target_path, &deps_path] {'
-              new_block = '    // Android release packaging consumes the library from target_path;\\n    // copying a second copy into deps is only for host-side test execution.\\n    for path in &[target_path] {'
+              old_block = '    let deps_path = target_path.join("deps");\n    for path in &[target_path, &deps_path] {'
+              new_block = '    // The Android packager consumes this library from target_path.\n    // The extra deps copy is only for host-side test execution.\n    for path in &[target_path] {'
               if old_block in block:
                   block = block.replace(old_block, new_block, 1)
                   path.write_text(source[:start] + block + source[end:])
