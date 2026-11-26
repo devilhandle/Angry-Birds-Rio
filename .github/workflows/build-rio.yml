@@ -154,6 +154,37 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
+      - name: Prepare rust-sdl2 Android library staging
+        working-directory: hyperhle
+        run: |
+          cargo fetch --target aarch64-linux-android
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+
+          roots = [Path.home() / ".cargo" / "git" / "checkouts"]
+          candidates = list(roots[0].glob("rust-sdl2-*/*/sdl2-sys/build.rs"))
+          if not candidates:
+              raise SystemExit("Fetched rust-sdl2 sdl2-sys build.rs was not found")
+          patched = 0
+          for path in candidates:
+              source = path.read_text()
+              start = source.find("fn copy_library_file(")
+              end = source.find("\nfn copy_dynamic_libraries(", start)
+              if start < 0 or end < 0:
+                  continue
+              block = source[start:end]
+              old_block = '    let deps_path = target_path.join("deps");\\n    for path in &[target_path, &deps_path] {'
+              new_block = '    // Android release packaging consumes the library from target_path;\\n    // copying a second copy into deps is only for host-side test execution.\\n    for path in &[target_path] {'
+              if old_block in block:
+                  block = block.replace(old_block, new_block, 1)
+                  path.write_text(source[:start] + block + source[end:])
+                  patched += 1
+          if patched == 0:
+              raise SystemExit("Could not apply Android SDL2 staging patch")
+          print(f"Patched {patched} rust-sdl2 build script(s)")
+          PY
+
       - name: Build APK
         working-directory: hyperhle
         env:
