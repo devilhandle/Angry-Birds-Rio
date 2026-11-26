@@ -125,7 +125,7 @@ jobs:
       - name: Download Android NDK
         working-directory: hyperhle
         env:
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: |
           curl -L -o android-ndk.zip "https://dl.google.com/android/repository/android-ndk-r25c-linux.zip"
           mkdir -p android-ndk
@@ -138,7 +138,7 @@ jobs:
       - name: Configure Android SDK
         working-directory: hyperhle
         env:
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
 
       - name: Regenerate SDL Gradle wrapper JAR
@@ -157,8 +157,8 @@ jobs:
       - name: Build APK
         working-directory: hyperhle
         env:
-          ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_ROOT }}
-          CMAKE: ${{ env.CMAKE }}
+          ANDROID_NDK_ROOT: /usr/local/lib/android/sdk/ndk/25.2.9519653
+          CMAKE: ${{ github.workspace }}/hyperhle/vendor/cmake/bin/cmake
         run: |
           gradle/gradle-8.11.1/bin/gradle -p android assembleRelease --no-daemon
           mkdir -p dist
